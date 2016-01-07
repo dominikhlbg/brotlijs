@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8"/>
+	<title>BrotliJS HTML5 Encoder/Decoder</title>
+	<meta name="description" content="" />
+    <style>
+body {
+	font-family:Roboto;
+}
+.example {
+    border: 1px solid #ccc;
+    padding: 10px;
+}
+.drop_zone {
+    border: 2px dashed #bbb;
+    border-radius: 5px;
+    color: #bbb;
+    padding: 25px;
+    text-align: center;
+}
+.thumb {
+    border: 1px solid #000;
+    height: 75px;
+    margin: 10px 5px 0 0;
+}
+#progress_bar {
+    border: 1px solid #000;
+    clear: both;
+    font-size: 14px;
+    margin: 10px 0;
+    opacity: 0;
+    padding: 3px;
+    transition: opacity 1s linear 0s;
+}
+#progress_bar.loading {
+    opacity: 1;
+}
+#progress_bar .percent {
+    background-color: #99ccff;
+    height: auto;
+    width: 0;
+}
+#byte_content {
+    margin: 5px 0;
+    max-height: 100px;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+#byte_range {
+    margin-top: 5px;
+}
+</style>
+<script>  /*if (typeof console == 'undefined')
+var console={log:function() {}};if (typeof console  != "undefined") 
+
+  if (typeof console.log != 'undefined')
+    console.olog = console.log;
+else
+  console.olog = function() {};
+
+console.log = function(message) {
+  console.olog(message);
+if(message) {
+if(message.indexOf('data:text/plain;base64,')>=0)
+message='<a href="'+message+'" target="_blank">Filelink</a>';
+}
+  document.getElementById('debugDiv').innerHTML+='<p>' + message + '</p>';
+};
+console.error = console.debug = console.info =  console.log*/</script></head>
+<link href="https://fonts.googleapis.com/css?family=Roboto:400,700" rel="stylesheet" type="text/css">
+<body>
+<h1>BrotliJS HTML5 Encoder/Decoder</h1>
+<p>Encode</p>
+<input type="file" id="file_encode" name="file_encode" title="Chose a file to encode" />
+<select id="quality_encode">
+<option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option>
+</select>
+<div class="drop_zone" id="drop_encode">Drop file here to encode</div>
+<output id="list_encode"></output>
+<p>Decode</p>
+<input type="file" id="file_decode" name="file_decode" title="Chose a file to decode" />
+<div class="drop_zone" id="drop_decode">Drop file here to decode</div>
+<output id="list_decode"></output>
+
+	<script src="brotli.js"></script>
+<script>
+function Uint8ToString(u8a){
+  var CHUNK_SZ = 0x8000;
+  var c = [];
+  for (var i=0; i < u8a.length; i+=CHUNK_SZ) {
+    c.push(String.fromCharCode.apply(null, u8a.subarray(i, i+CHUNK_SZ)));
+  }
+  return c.join("");
+}
+  function handleSelectEncode(evt) {
+    evt.stopPropagation();
+    evt.preventDefault();
+
+    var files = (typeof evt.dataTransfer!=='undefined')?evt.dataTransfer.files:evt.target.files;
+	var file = files[0];
+
+      var reader = new FileReader();
+
+      reader.onload = (function(theFile) {
+        return function(e) {
+			var quality = document.getElementById('quality_encode').selectedIndex+1;
+			var input = new Uint8Array(e.target.result);
+			var start = (new Date()).getTime();
+var bro = new Brotli();
+			var output=bro.compressArray(input,quality);
+			var end = (new Date()).getTime();
+			var uncompressed_bytes =output.length;
+			var duration=(end-start)/1000;
+			var speed = uncompressed_bytes / (1024 * 1024)/duration;
+			
+          var span = document.createElement('div');
+          span.innerHTML = 'Size: '+uncompressed_bytes+' - Brotli compression speed: '+speed.toFixed(2)+'MB/s '+(end-start)+'ms - File: (base64) <a target="_blank" href="data:application/octet-stream;base64,'+btoa(output.map(function(b){return String.fromCharCode(b)}).join(""))+'" download="'+file.name+'.brotli'+'">Filelink</a>';
+          document.getElementById('list_encode').appendChild(span);
+        };
+      })(file);
+
+      reader.readAsArrayBuffer(file);
+  }
+
+   function handleSelectDecode(evt) {
+    evt.stopPropagation();
+    evt.preventDefault();
+
+    var files = (typeof evt.dataTransfer!=='undefined')?evt.dataTransfer.files:evt.target.files;
+	var file = files[0];
+
+      var reader = new FileReader();
+
+      reader.onload = (function(theFile) {
+        return function(e) {
+			var input = new Uint8Array(e.target.result);
+			var start = (new Date()).getTime();
+var bro = new Brotli();
+			var output=bro.decompressArray(input);
+			var end = (new Date()).getTime();
+			
+			var uncompressed_bytes =output.length;
+			var duration=(end-start)/1000;
+			var speed = uncompressed_bytes / (1024 * 1024)/duration;
+          var span = document.createElement('div');
+          span.innerHTML = 'Size: '+output.length+' - Brotli decompression speed: '+speed.toFixed(2)+'MB/s '+(end-start)+'ms - File: (base64) <a target="_blank" href="data:application/octet-stream;base64,'+btoa(output.map(function(b){return String.fromCharCode(b)}).join(""))+'" download="'+file.name.replace(/.brotli$/, "")+'">Filelink</a>';
+          document.getElementById('list_decode').appendChild(span);
+        };
+      })(file);
+
+      reader.readAsArrayBuffer(file);
+  }
+
+ function handleDragOver(evt) {
+    evt.stopPropagation();
+    evt.preventDefault();
+    evt.dataTransfer.dropEffect = 'copy';
+  }
+
+  document.getElementById('file_encode').addEventListener('change', handleSelectEncode, false);
+  var dropZone = document.getElementById('drop_encode');
+  dropZone.addEventListener('dragover', handleDragOver, false);
+  dropZone.addEventListener('drop', handleSelectEncode, false);
+  document.getElementById('file_decode').addEventListener('change', handleSelectDecode, false);
+  var dropZone = document.getElementById('drop_decode');
+  dropZone.addEventListener('dragover', handleDragOver, false);
+  dropZone.addEventListener('drop', handleSelectDecode, false);
+</script>
+<p> </p>
+<p>Develop by Dominik Homberger</p>
+</body>
+</html>
