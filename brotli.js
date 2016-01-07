@@ -982,7 +982,6 @@ decode_Decode.BrotliDecompressStreaming = function(input,output,finish,s) {
 	s.br.input_ = input;
 	s.br.finish_ = finish;
 	while(true) {
-		__php__("print memory_get_usage().\"<br>\n\";");
 		if(result != 1) {
 			if(result == 2 && finish == 1) {
 				console.log("Unexpected end of input. State: " + s.state + "\n");
@@ -1940,7 +1939,6 @@ decode_Streams.BrotliRead = function(input,buf,buf_off,len) {
 	return input.cb_(input.data_,buf,buf_off,len);
 };
 decode_Streams.BrotliWrite = function(out,buf,buf_off,len) {
-	__php__("print memory_get_usage().\"<br>\n\";");
 	return out.cb_(out.data_,buf,buf_off,len);
 };
 decode_Streams.BrotliMemInputFunction = function(data,buf,buf_off,count) {
